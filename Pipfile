@@ -9,6 +9,7 @@ name = "pypi"
 
 "boto3" = "*"
 ipython = "*"
+aws = "*"
 
 
 [dev-packages]
