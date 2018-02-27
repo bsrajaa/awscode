@@ -1,19 +1,35 @@
-import urllib
-import json
+import math
+import requests
 
-url = "http://ajax.googleapis.com/ajax/services/search/web?v=1.0&"
+def calc_dist(lat1, lon1, lat2, lon2):
+    lat1 = math.radians(lat1)
+    lon1 = math.radians(lon1)
+    lat2 = math.radians(lat2)
+    lon2 = math.radians(lon2)
 
-query = raw_input("What do you want to search for ? >> ")
+    h = math.sin( (lat2 - lat1) / 2 ) ** 2 + \
+      math.cos(lat1) * \
+      math.cos(lat2) * \
+      math.sin( (lon2 - lon1) / 2 ) ** 2
 
-query = urllib.urlencode( {'q' : query } )
+    return 6372.8 * 2 * math.asin(math.sqrt(h))
 
-response = urllib2.urlopen (url + query ).read()
+def get_dist(meteor):
+    return meteor.get('distance', math.inf)
 
-data = json.loads ( response )
+if __name__ == '__main__':
+    my_loc = (29.424122, -98.493628)
 
-results = data [ 'responseData' ] [ 'results' ]
+    meteor_resp = requests.get('https://data.nasa.gov/resource/y77d-th95.json')
+    meteor_data = meteor_resp.json()
 
-for result in results:
-    title = result['title']
-    url = result['url']
-    print ( title + '; ' + url )
+    for meteor in meteor_data:
+        if not ('reclat' in meteor and 'reclong' in meteor): continue
+        meteor['distance'] = calc_dist(float(meteor['reclat']),
+                                       float(meteor['reclong']),
+                                       my_loc[0],
+                                       my_loc[1])
+
+    meteor_data.sort(key=get_dist)
+
+    print(meteor_data[0:10])
